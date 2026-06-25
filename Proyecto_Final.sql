@@ -2,11 +2,11 @@ if not exists (
 select name from sys.databases where name = 'ComprasVentasInventarioDB'
 )
 begin
-create database comprasventasinventariodb
+create database [ComprasVentasInventarioDB]
 end
 go
 
-use comprasventasinventariodb
+use [ComprasVentasInventarioDB]
 go
 
 if not exists (select 1 from sys.schemas where name = 'seguridad')
@@ -666,3 +666,350 @@ go
 alter table seguridad.usuario
 add constraint chk_usuario_intentos check (intentos_fallidos >= 0);
 go
+
+
+UPDATE datos.cliente
+SET correo='carlos@gmail.com',
+    updated_at=GETDATE()
+WHERE id_cliente=1;
+GO
+
+UPDATE datos.proveedor
+SET telefono='88887777',
+    updated_at=GETDATE()
+WHERE id_proveedor=2;
+GO
+
+UPDATE datos.producto
+SET precio_venta=28.50,
+    updated_at=GETDATE()
+WHERE id_producto=1;
+GO
+
+UPDATE datos.producto
+SET descripcion='Leche Entera Premium',
+    updated_at=GETDATE()
+WHERE id_producto=2;
+GO
+
+UPDATE datos.categoria
+SET nombre_categoria='Bebidas Gaseosas',
+    updated_at=GETDATE()
+WHERE id_categoria=1;
+GO
+
+UPDATE datos.marca
+SET nombre_marca='Nestlé Nicaragua',
+    updated_at=GETDATE()
+WHERE id_marca=2;
+GO
+
+UPDATE datos.bodega
+SET responsable='Juan Pérez',
+    telefono='22556677',
+    updated_at=GETDATE()
+WHERE id_bodega=1;
+GO
+
+UPDATE datos.inventario
+SET stock=150,
+    updated_at=GETDATE()
+WHERE id_producto=1
+AND id_bodega=1;
+GO
+
+UPDATE seguridad.usuario
+SET correo='adminnuevo@sinorges.com',
+    updated_at=GETDATE()
+WHERE id_usuario=1;
+GO
+
+UPDATE datos.compra
+SET observacion='Compra actualizada',
+    updated_at=GETDATE()
+WHERE id_compra=1;
+GO
+
+UPDATE datos.cliente
+SET is_active=0,
+deleted_at=GETDATE()
+WHERE id_cliente=2;
+GO
+
+UPDATE datos.proveedor
+SET is_active=0,
+deleted_at=GETDATE()
+WHERE id_proveedor=2;
+GO
+
+UPDATE datos.producto
+SET is_active=0,
+deleted_at=GETDATE()
+WHERE id_producto=3;
+GO
+
+UPDATE datos.categoria
+SET is_active=0,
+deleted_at=GETDATE()
+WHERE id_categoria=2;
+GO
+
+UPDATE datos.marca
+SET is_active=0,
+deleted_at=GETDATE()
+WHERE id_marca=3;
+GO
+
+UPDATE datos.unidadmedida
+SET is_active=0,
+deleted_at=GETDATE()
+WHERE id_unidad_medida=2;
+GO
+
+UPDATE datos.bodega
+SET is_active=0,
+deleted_at=GETDATE()
+WHERE id_bodega=2;
+GO
+
+UPDATE datos.compra
+SET is_active=0,
+deleted_at=GETDATE()
+WHERE id_compra=2;
+GO
+
+UPDATE datos.venta
+SET is_active=0,
+deleted_at=GETDATE()
+WHERE id_venta=2;
+GO
+
+UPDATE seguridad.usuario
+SET is_active=0,
+deleted_at=GETDATE()
+WHERE id_usuario=2;
+GO
+
+-- Productos con categoría, marca y unidad de medida --
+SELECT
+P.id_producto,
+P.nombre_producto,
+C.nombre_categoria,
+M.nombre_marca,
+U.nombre_unidad,
+P.precio_venta
+FROM datos.producto P
+INNER JOIN datos.categoria C
+ON P.id_categoria=C.id_categoria
+INNER JOIN datos.marca M
+ON P.id_marca=M.id_marca
+INNER JOIN datos.unidadmedida U
+ON P.id_unidad_medida=U.id_unidad_medida
+ORDER BY P.nombre_producto;
+GO
+
+-- Clientes con ciudad y departamento --
+SELECT
+CL.nombre_cliente,
+CL.correo,
+CI.nombre_ciudad,
+D.nombre_departamento
+FROM datos.cliente CL
+INNER JOIN datos.ciudad CI
+ON CL.id_ciudad=CI.id_ciudad
+INNER JOIN datos.departamento D
+ON CI.id_departamento=D.id_departamento;
+GO
+
+-- Proveedores con ciudad --
+SELECT
+P.nombre_proveedor,
+P.telefono,
+P.correo,
+C.nombre_ciudad
+FROM datos.proveedor P
+INNER JOIN datos.ciudad C
+ON P.id_ciudad=C.id_ciudad;
+GO
+
+-- Inventario por bodega --
+SELECT
+B.nombre_bodega,
+PR.nombre_producto,
+I.stock,
+I.stock_minimo
+FROM datos.inventario I
+INNER JOIN datos.producto PR
+ON I.id_producto=PR.id_producto
+INNER JOIN datos.bodega B
+ON I.id_bodega=B.id_bodega
+ORDER BY B.nombre_bodega;
+GO
+
+-- Ventas con nombre del cliente --
+SELECT
+V.id_venta,
+V.fecha_venta,
+CL.nombre_cliente,
+V.total_venta
+FROM datos.venta V
+INNER JOIN datos.cliente CL
+ON V.id_cliente=CL.id_cliente
+ORDER BY V.fecha_venta DESC;
+GO
+
+-- Compras con proveedor --
+SELECT
+C.id_compra,
+P.nombre_proveedor,
+C.fecha_compra,
+C.total_compra
+FROM datos.compra C
+INNER JOIN datos.proveedor P
+ON C.id_proveedor=P.id_proveedor
+ORDER BY C.fecha_compra DESC;
+GO
+
+-- Total vendido por cliente --
+SELECT
+CL.nombre_cliente,
+SUM(V.total_venta) AS TotalComprado
+FROM datos.cliente CL
+INNER JOIN datos.venta V
+ON CL.id_cliente=V.id_cliente
+GROUP BY CL.nombre_cliente
+ORDER BY TotalComprado DESC;
+GO
+
+-- Total comprado por proveedor --
+SELECT
+P.nombre_proveedor,
+SUM(C.total_compra) AS TotalComprado
+FROM datos.proveedor P
+INNER JOIN datos.compra C
+ON P.id_proveedor=C.id_proveedor
+GROUP BY P.nombre_proveedor
+ORDER BY TotalComprado DESC;
+GO
+
+-- Productos con stock menor al mínimo --
+SELECT
+P.nombre_producto,
+B.nombre_bodega,
+I.stock,
+I.stock_minimo
+FROM datos.inventario I
+INNER JOIN datos.producto P
+ON I.id_producto=P.id_producto
+INNER JOIN datos.bodega B
+ON I.id_bodega=B.id_bodega
+WHERE I.stock<I.stock_minimo;
+GO
+
+-- Cinco productos más caros --
+SELECT TOP 5
+nombre_producto,
+precio_venta
+FROM datos.producto
+ORDER BY precio_venta DESC;
+GO
+
+-- Productos vendidos y cantidad total --
+SELECT
+P.nombre_producto,
+SUM(DV.cantidad_venta) AS TotalVendido
+FROM datos.detalleventa DV
+INNER JOIN datos.producto P
+ON DV.id_producto=P.id_producto
+GROUP BY P.nombre_producto
+ORDER BY TotalVendido DESC;
+GO
+
+-- Productos comprados y cantidad total --
+SELECT
+P.nombre_producto,
+SUM(DC.cantidad_compra) AS TotalComprado
+FROM datos.detallecompra DC
+INNER JOIN datos.producto P
+ON DC.id_producto=P.id_producto
+GROUP BY P.nombre_producto
+ORDER BY TotalComprado DESC;
+GO
+
+-- Promedio del precio de los productos por categoría --
+SELECT
+C.nombre_categoria,
+AVG(P.precio_venta) AS PrecioPromedio
+FROM datos.producto P
+INNER JOIN datos.categoria C
+ON P.id_categoria=C.id_categoria
+GROUP BY C.nombre_categoria;
+GO
+
+-- Total de ventas por mes --
+SELECT
+MONTH(fecha_venta) AS Mes,
+SUM(total_venta) AS TotalVentas
+FROM datos.venta
+GROUP BY MONTH(fecha_venta);
+GO
+
+-- Total de compras por mes --
+SELECT
+MONTH(fecha_compra) AS Mes,
+SUM(total_compra) AS TotalCompras
+FROM datos.compra
+GROUP BY MONTH(fecha_compra);
+GO
+
+-- Productos cuyo precio está arriba del promedio --
+SELECT
+nombre_producto,
+precio_venta
+FROM datos.producto
+WHERE precio_venta>(
+SELECT AVG(precio_venta)
+FROM datos.producto);
+GO
+
+-- Cliente que realizó la compra más alta --
+SELECT TOP 1
+CL.nombre_cliente,
+V.total_venta
+FROM datos.venta V
+INNER JOIN datos.cliente CL
+ON V.id_cliente=CL.id_cliente
+ORDER BY V.total_venta DESC;
+GO
+
+-- Proveedor con la compra más alta --
+SELECT TOP 1
+P.nombre_proveedor,
+C.total_compra
+FROM datos.compra C
+INNER JOIN datos.proveedor P
+ON C.id_proveedor=P.id_proveedor
+ORDER BY C.total_compra DESC;
+GO
+
+-- Cantidad de productos por categoría --
+SELECT
+C.nombre_categoria,
+COUNT(P.id_producto) AS CantidadProductos
+FROM datos.categoria C
+INNER JOIN datos.producto P
+ON C.id_categoria=P.id_categoria
+GROUP BY C.nombre_categoria;
+GO
+
+
+-- Usuarios con su rol asignado --
+SELECT
+U.nombre_usuario,
+R.nombre_rol
+FROM seguridad.usuario U
+INNER JOIN seguridad.rol_usuario RU
+ON U.id_usuario=RU.id_usuario
+INNER JOIN seguridad.rol R
+ON RU.id_rol=R.id_rol;
+GO
